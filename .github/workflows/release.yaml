@@ -1,0 +1,114 @@
+name: C++ Release
+
+on:
+  push:
+    branches:
+      - main  # Trigger on push to main branch
+    tags:
+      - '*'  # Optionally, trigger on tags for versioning
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up CMake
+        uses: actions/setup-cmake@v2
+
+      - name: Build with CMake (Linux)
+        run: |
+          mkdir build
+          cd build
+          cmake ..
+          cmake --build .
+
+      - name: Create Release Artifact (Linux)
+        run: |
+          mkdir release
+          cp build/your_executable_name release/ # Replace with actual executable path
+
+      - name: Upload Artifact (Linux)
+        uses: actions/upload-artifact@v2
+        with:
+          name: release-linux
+          path: release/your_executable_name
+
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up CMake
+        uses: actions/setup-cmake@v2
+
+      - name: Build with CMake (macOS)
+        run: |
+          mkdir build
+          cd build
+          cmake ..
+          cmake --build .
+
+      - name: Create Release Artifact (macOS)
+        run: |
+          mkdir release
+          cp build/your_executable_name release/ # Replace with actual executable path
+
+      - name: Upload Artifact (macOS)
+        uses: actions/upload-artifact@v2
+        with:
+          name: release-mac
+          path: release/your_executable_name
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up CMake
+        uses: actions/setup-cmake@v2
+
+      - name: Build with CMake (Windows)
+        run: |
+          mkdir build
+          cd build
+          cmake -G "Visual Studio 16 2019" ..
+          cmake --build . --config Release
+
+      - name: Create Release Artifact (Windows)
+        run: |
+          mkdir release
+          cp build/Release/your_executable_name.exe release/ # Replace with actual executable path
+
+      - name: Upload Artifact (Windows)
+        uses: actions/upload-artifact@v2
+        with:
+          name: release-windows
+          path: release/your_executable_name.exe
+
+  create-release:
+    needs: [build-linux, build-mac, build-windows]  # Wait for all platforms to complete
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up Version
+        run: |
+          VERSION=$(git describe --tags --abbrev=0) # Get the latest git tag or set your versioning scheme
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release-linux/your_executable_name
+            release-mac/your_executable_name
+            release-windows/your_executable_name.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ env.VERSION }}
