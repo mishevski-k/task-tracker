@@ -101,13 +101,20 @@ jobs:
         with:
           path: artifacts
 
+      - name: Create ZIP Archives
+        run: |
+          cd artifacts/release-linux && zip -r ../../task-cli-linux.zip task-cli && cd -
+          cd artifacts/release-mac && zip -r ../../task-cli-mac.zip task-cli && cd -
+          cd artifacts/release-windows && zip -r ../../task-cli-windows.zip task-cli.exe && cd -
+
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ env.VERSION }}
           files: |
-            artifacts/release-linux/task-cli
-            artifacts/release-mac/task-cli
-            artifacts/release-windows/task-cli.exe
+            task-cli-linux.zip
+            task-cli-mac.zip
+            task-cli-windows.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
