@@ -3,6 +3,7 @@
 [Dd]ebugPublic/
 [Dd]ist/
 [Dd]istD/
+cmake-build-debug/
 
 # Prerequisites
 *.d
@@ -74,3 +75,5 @@ buildlog.xml
 
 # Ignore NuGet packages (if not using them from the repository)
 # .nuget/
+
+task-cli
