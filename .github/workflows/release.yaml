@@ -84,6 +84,9 @@ jobs:
     needs: [build-linux, build-mac, build-windows]  # Wait for all platforms to complete
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
       - name: Check out code
         uses: actions/checkout@v4
