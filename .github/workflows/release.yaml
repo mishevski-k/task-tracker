@@ -3,9 +3,9 @@ name: C++ Release
 on:
   push:
     branches:
-      - main  # Trigger on push to main branch
+      - main  # Triggers on push to the main branch
     tags:
-      - '*'  # Optionally, trigger on tags for versioning
+      - '*'  # Also triggers on any tag push, including from dev or other branches
 
 jobs:
   build-linux:
@@ -27,13 +27,13 @@ jobs:
       - name: Create Release Artifact (Linux)
         run: |
           mkdir release
-          cp build/your_executable_name release/ # Replace with actual executable path
+          cp build/task-cli release/ # The task-cli executable
 
       - name: Upload Artifact (Linux)
         uses: actions/upload-artifact@v2
         with:
           name: release-linux
-          path: release/your_executable_name
+          path: release/task-cli
 
   build-mac:
     runs-on: macos-latest
@@ -54,13 +54,13 @@ jobs:
       - name: Create Release Artifact (macOS)
         run: |
           mkdir release
-          cp build/your_executable_name release/ # Replace with actual executable path
+          cp build/task-cli release/ # The task-cli executable
 
       - name: Upload Artifact (macOS)
         uses: actions/upload-artifact@v2
         with:
           name: release-mac
-          path: release/your_executable_name
+          path: release/task-cli
 
   build-windows:
     runs-on: windows-latest
@@ -81,13 +81,13 @@ jobs:
       - name: Create Release Artifact (Windows)
         run: |
           mkdir release
-          cp build/Release/your_executable_name.exe release/ # Replace with actual executable path
+          cp build/Release/task-cli.exe release/ # The task-cli executable for Windows
 
       - name: Upload Artifact (Windows)
         uses: actions/upload-artifact@v2
         with:
           name: release-windows
-          path: release/your_executable_name.exe
+          path: release/task-cli.exe
 
   create-release:
     needs: [build-linux, build-mac, build-windows]  # Wait for all platforms to complete
@@ -99,16 +99,16 @@ jobs:
 
       - name: Set up Version
         run: |
-          VERSION=$(git describe --tags --abbrev=0) # Get the latest git tag or set your versioning scheme
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          VERSION=$(git describe --tags --abbrev=0)  # Get the latest git tag
+          echo "VERSION=$VERSION" >> $GITHUB_ENV  # Set the version as an environment variable
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            release-linux/your_executable_name
-            release-mac/your_executable_name
-            release-windows/your_executable_name.exe
+            release-linux/task-cli
+            release-mac/task-cli
+            release-windows/task-cli.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ env.VERSION }}
