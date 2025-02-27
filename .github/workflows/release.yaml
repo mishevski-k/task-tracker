@@ -1,0 +1,114 @@
+name: C++ Release
+
+on:
+  push:
+    branches:
+      - main  # Triggers on push to the main branch
+    tags:
+      - '*'  # Also triggers on any tag push, including from dev or other branches
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up CMake
+        uses: actions/setup-cmake@v2
+
+      - name: Build with CMake (Linux)
+        run: |
+          mkdir build
+          cd build
+          cmake ..
+          cmake --build .
+
+      - name: Create Release Artifact (Linux)
+        run: |
+          mkdir release
+          cp build/task-cli release/ # The task-cli executable
+
+      - name: Upload Artifact (Linux)
+        uses: actions/upload-artifact@v2
+        with:
+          name: release-linux
+          path: release/task-cli
+
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up CMake
+        uses: actions/setup-cmake@v2
+
+      - name: Build with CMake (macOS)
+        run: |
+          mkdir build
+          cd build
+          cmake ..
+          cmake --build .
+
+      - name: Create Release Artifact (macOS)
+        run: |
+          mkdir release
+          cp build/task-cli release/ # The task-cli executable
+
+      - name: Upload Artifact (macOS)
+        uses: actions/upload-artifact@v2
+        with:
+          name: release-mac
+          path: release/task-cli
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up CMake
+        uses: actions/setup-cmake@v2
+
+      - name: Build with CMake (Windows)
+        run: |
+          mkdir build
+          cd build
+          cmake -G "Visual Studio 16 2019" ..
+          cmake --build . --config Release
+
+      - name: Create Release Artifact (Windows)
+        run: |
+          mkdir release
+          cp build/Release/task-cli.exe release/ # The task-cli executable for Windows
+
+      - name: Upload Artifact (Windows)
+        uses: actions/upload-artifact@v2
+        with:
+          name: release-windows
+          path: release/task-cli.exe
+
+  create-release:
+    needs: [build-linux, build-mac, build-windows]  # Wait for all platforms to complete
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up Version
+        run: |
+          VERSION=$(git describe --tags --abbrev=0)  # Get the latest git tag
+          echo "VERSION=$VERSION" >> $GITHUB_ENV  # Set the version as an environment variable
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release-linux/task-cli
+            release-mac/task-cli
+            release-windows/task-cli.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ env.VERSION }}
