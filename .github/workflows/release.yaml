@@ -12,10 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
-
-      - name: Set up CMake
-        uses: actions/setup-cmake@v2
+        uses: actions/checkout@v4
 
       - name: Build with CMake (Linux)
         run: |
@@ -27,10 +24,10 @@ jobs:
       - name: Create Release Artifact (Linux)
         run: |
           mkdir release
-          cp build/task-cli release/ # The task-cli executable
+          cp build/task-cli release/  # The task-cli executable
 
       - name: Upload Artifact (Linux)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: release-linux
           path: release/task-cli
@@ -39,10 +36,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
-
-      - name: Set up CMake
-        uses: actions/setup-cmake@v2
+        uses: actions/checkout@v4
 
       - name: Build with CMake (macOS)
         run: |
@@ -54,10 +48,10 @@ jobs:
       - name: Create Release Artifact (macOS)
         run: |
           mkdir release
-          cp build/task-cli release/ # The task-cli executable
+          cp build/task-cli release/  # The task-cli executable
 
       - name: Upload Artifact (macOS)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: release-mac
           path: release/task-cli
@@ -66,25 +60,22 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
-
-      - name: Set up CMake
-        uses: actions/setup-cmake@v2
+        uses: actions/checkout@v4
 
       - name: Build with CMake (Windows)
         run: |
           mkdir build
           cd build
-          cmake -G "Visual Studio 16 2019" ..
+          cmake -G "Visual Studio 17 2022" ..
           cmake --build . --config Release
 
       - name: Create Release Artifact (Windows)
         run: |
           mkdir release
-          cp build/Release/task-cli.exe release/ # The task-cli executable for Windows
+          cp build/Release/task-cli.exe release/  # The task-cli executable for Windows
 
       - name: Upload Artifact (Windows)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: release-windows
           path: release/task-cli.exe
@@ -95,20 +86,25 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Version
         run: |
-          VERSION=$(git describe --tags --abbrev=0)  # Get the latest git tag
+          VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.1.0")  # Get the latest git tag or fallback to v0.1.0
           echo "VERSION=$VERSION" >> $GITHUB_ENV  # Set the version as an environment variable
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ env.VERSION }}
           files: |
-            release-linux/task-cli
-            release-mac/task-cli
-            release-windows/task-cli.exe
+            artifacts/release-linux/task-cli
+            artifacts/release-mac/task-cli
+            artifacts/release-windows/task-cli.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ env.VERSION }}
