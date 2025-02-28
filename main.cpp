@@ -65,14 +65,37 @@ public:
     }
 };
 
-int main() {
+std::vector<Task> tasks;
 
-    std::vector<Task> tasks;
+int add(int argc, char *argv[]) {
+    if (argc < 3) {
+        std::cerr << "Usage: ./task-cli add <description>" << std::endl;
+        return 1;
+    }
 
-
-    Task task = Task(1, "test", TaskStatus::DONE, std::time(nullptr), std::time(nullptr));
+    Task task = Task(tasks.size() + 1, argv[2], TaskStatus::TODO, std::time(nullptr), std::time(nullptr));
 
     tasks.push_back(task);
+
+    return 0;
+}
+
+int main(int argc, char *argv[]) {
+
+    // Just for testing
+    Task task = Task(1, "test", TaskStatus::DONE, std::time(nullptr), std::time(nullptr));
+    tasks.push_back(task);
+
+    if (argc < 2) {
+        std::cerr << "Usage: ./task.cli <action>\n";
+        return 1;
+    }
+
+    std::cout << argc << std::endl;
+
+    if (static_cast<std::string>(argv[1]) == "add") {
+        add(argc, argv);
+    }
 
     for (int i = 0; i < tasks.size(); ++i) {
         std::cout << tasks.at(i).getId() << std::endl;
