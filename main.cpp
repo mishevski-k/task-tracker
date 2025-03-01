@@ -11,7 +11,7 @@
 // Features to change/add: change tasks to a better data structure, add exception handling instead of return code, refactor everything in more header/source files
 
 enum TaskStatus {
-    TODO, IN_PROGRESS, DONE
+    TODO, IN_PROGRESS, DONE, DELETED
 };
 
 std::string statusToString(TaskStatus status) {
@@ -19,6 +19,7 @@ std::string statusToString(TaskStatus status) {
         {TaskStatus::DONE, "Done"},
         {TaskStatus::TODO, "Todo"},
         {TaskStatus::IN_PROGRESS, "In progress"},
+        {TaskStatus::DELETED, "Deleted"}
     };
 
     if (auto it = statusMap.find(status); it != statusMap.end()) {
@@ -103,6 +104,10 @@ public:
     std::string getUpdatedAtFormated() {
         return formatTime(this->getUpdatedAt());
     }
+
+    std::string toString() {
+        return std::format("Task: ( id: {}, status: {}, description: {}, createdAt: {}, updatedAt: {} )", this->getId(), this->getStatusString(), this->getDescription(), this->getCreatedAtFormated(), this->getUpdatedAtFormated());
+    }
 };
 
 // Change to binary tree later on for faster search
@@ -132,6 +137,9 @@ int add(int argc, char *argv[]) {
 
     tasks.push_back(task);
 
+    std::cout << "Task Created: " << std::endl;
+    std::cout << task.toString() << std::endl;
+
     return 0;
 }
 
@@ -152,6 +160,9 @@ int update(int argc, char *argv[]) {
 
     response->task.setDescription(description);
 
+    std::cout << "Task Updated: " << std::endl;
+    std::cout << response->task.toString() << std::endl;
+
     return 0;
 }
 
@@ -171,14 +182,37 @@ int deleteTask(int argc, char *argv[]) {
     }
 
     tasks.erase(tasks.begin() + response->index);
+    response->task.setStatus(TaskStatus::DELETED);
+
+    std::cout << "Task Deleted: " << std::endl;
+    std::cout << response->task.toString() << std::endl;
+
+    return 0;
+}
+
+int changeStatus(int argc, char *argv[], TaskStatus newStatus) {
+    if (argc < 3) {
+        std::cerr << "Usage: ./task-cli mark-<status> <id>" << std::endl;
+        return 1;
+    }
+
+    std::optional<FindTaskByIdResponse> response = findTaskById(atoi(argv[2]));
+
+    if (!response) {
+        std::cerr << "Task not found" << std::endl;
+        return 1;
+    }
+
+    response->task.setStatus(newStatus);
+    std::cout << "Task Changed to: " << response->task.getStatusString() << std::endl;
+    std::cout << response->task.toString() << std::endl;
 
     return 0;
 }
 
 void list() {
     for (Task task : tasks) {
-        std::string message = std::format("Task: ( id: {}, status: {}, description: {}, createdAt: {}, updatedAt: {} )", task.getId(), task.getStatusString(), task.getDescription(), task.getCreatedAtFormated(), task.getUpdatedAtFormated());
-        std::cout << message << std::endl;
+        std::cout << task.toString() << std::endl;
     }
 }
 
@@ -193,8 +227,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    std::cout << argc << std::endl;
-
     std::string action = static_cast<std::string>(argv[1]);
 
     if (action == "add") {
@@ -203,14 +235,15 @@ int main(int argc, char *argv[]) {
         update(argc, argv);
     }else if (action == "delete") {
         deleteTask(argc, argv);
+    }else if (action == "mark-in-progress") {
+        changeStatus(argc, argv, TaskStatus::IN_PROGRESS);
+    }else if (action == "mark-done") {
+        changeStatus(argc, argv, TaskStatus::DONE);
     }else if (action == "list") {
         list();
+    }else {
+        std::cerr << "Unknown action: " << action << std::endl;
     }
-
-    // For debugging only
-    list();
-
-    std::cout << "Main is working" << std::endl;
 
     return 0;
 }
