@@ -68,7 +68,12 @@ set_tests_properties(UnknownActionCommand PROPERTIES PASS_REGULAR_EXPRESSION "Un
 
 set(CMAKE_CXX_STANDARD 20)
 
-set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++ -static")
+# Handle different compiler flags based on platform
+if(APPLE)
+    set(CMAKE_EXE_LINKER_FLAGS "")
+elseif(WIN32)
+    set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++ -static")
+endif()
 
 #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_executable(task-cli main.cpp)
