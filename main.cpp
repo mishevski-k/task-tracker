@@ -14,19 +14,37 @@ enum TaskStatus {
     TODO, IN_PROGRESS, DONE, DELETED
 };
 
-std::string statusToString(TaskStatus status) {
-    static  const std::unordered_map<TaskStatus, std::string> statusMap = {
-        {TaskStatus::DONE, "Done"},
-        {TaskStatus::TODO, "Todo"},
-        {TaskStatus::IN_PROGRESS, "In progress"},
-        {TaskStatus::DELETED, "Deleted"}
-    };
+static  const std::unordered_map<TaskStatus, std::string> statusLabelMap = {
+    {TaskStatus::DONE, "Done"},
+    {TaskStatus::TODO, "Todo"},
+    {TaskStatus::IN_PROGRESS, "In progress"},
+    {TaskStatus::DELETED, "Deleted"}
+};
 
-    if (auto it = statusMap.find(status); it != statusMap.end()) {
+static  const std::unordered_map<TaskStatus, std::string> statusKeyMap = {
+    {TaskStatus::DONE, "done"},
+    {TaskStatus::TODO, "todo"},
+    {TaskStatus::IN_PROGRESS, "in-progress"},
+    {TaskStatus::DELETED, "deleted"}
+};
+
+std::string statusToLabel(TaskStatus status) {
+
+
+    if (auto it = statusLabelMap.find(status); it != statusLabelMap.end()) {
         return it->second;
     }
 
     return "Unknown";
+}
+
+std::string statusToKey(TaskStatus status) {
+
+    if (auto it = statusKeyMap.find(status); it != statusKeyMap.end()) {
+        return it->second;
+    }
+
+    return "unknown";
 }
 
 class Task {
@@ -65,8 +83,12 @@ public:
         return this->status;
     }
 
-    std::string getStatusString() {
-        return statusToString(this->status);
+    std::string getStatusLabel() {
+        return statusToLabel(this->status);
+    }
+
+    std::string getStatusKey() {
+        return statusToKey(this->status);
     }
 
     void setStatus(TaskStatus status) {
@@ -106,7 +128,7 @@ public:
     }
 
     std::string toString() {
-        return std::format("Task: ( id: {}, status: {}, description: {}, createdAt: {}, updatedAt: {} )", this->getId(), this->getStatusString(), this->getDescription(), this->getCreatedAtFormated(), this->getUpdatedAtFormated());
+        return std::format("Task: ( id: {}, status: {}, description: {}, createdAt: {}, updatedAt: {} )", this->getId(), this->getStatusLabel(), this->getDescription(), this->getCreatedAtFormated(), this->getUpdatedAtFormated());
     }
 };
 
@@ -192,7 +214,7 @@ int deleteTask(int argc, char *argv[]) {
 
 int changeStatus(int argc, char *argv[], TaskStatus newStatus) {
     if (argc < 3) {
-        std::cerr << "Usage: ./task-cli mark-<status> <id>" << std::endl;
+        std::cerr << "Usage: ./task-cli mark-" << statusToKey(newStatus) << " <id>" << std::endl;
         return 1;
     }
 
@@ -204,16 +226,41 @@ int changeStatus(int argc, char *argv[], TaskStatus newStatus) {
     }
 
     response->task.setStatus(newStatus);
-    std::cout << "Task Changed to: " << response->task.getStatusString() << std::endl;
+    std::cout << "Task Changed to: " << response->task.getStatusLabel() << std::endl;
     std::cout << response->task.toString() << std::endl;
 
     return 0;
 }
 
-void list() {
+
+
+int list(int argc, char *argv[]) {
+
+    std::optional<TaskStatus> statusFilter = std::nullopt;
+
+    if (argc > 2) {
+        for (const auto& [key, value] : statusKeyMap) {
+            if (argv[2] == value) {
+                statusFilter = key;
+            }
+        }
+
+        if (!statusFilter) {
+            std::cerr << "Unknown task status, supported: [done, todo, in-progress]" << std::endl;
+            return 1;
+        }
+    }
+
     for (Task task : tasks) {
+
+        if (statusFilter && statusFilter != task.getStatus()) {
+            continue;
+        }
+
         std::cout << task.toString() << std::endl;
     }
+
+    return 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -240,7 +287,7 @@ int main(int argc, char *argv[]) {
     }else if (action == "mark-done") {
         changeStatus(argc, argv, TaskStatus::DONE);
     }else if (action == "list") {
-        list();
+        list(argc, argv);
     }else {
         std::cerr << "Unknown action: " << action << std::endl;
     }
