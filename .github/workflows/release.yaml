@@ -80,7 +80,7 @@ jobs:
       - name: Run Tests (Windows)
         run: |
           cd build
-          ctest --output-on-failure  # Run tests and output on failure
+          ctest --output-on-failure -C Release # Run tests and output on failure
 
       - name: Create Release Artifact (Windows)
         run: |
