@@ -133,7 +133,7 @@ public:
 };
 
 // Change to binary tree later on for faster search
-std::vector<Task> tasks;
+std::vector<Task> tasks = {};
 
 struct FindTaskByIdResponse {
     Task& task;
@@ -178,6 +178,7 @@ int update(int argc, char *argv[]) {
 
     if (!response) {
         std::cerr << "Task not found" << std::endl;
+        return 1;
     }
 
     response->task.setDescription(description);
