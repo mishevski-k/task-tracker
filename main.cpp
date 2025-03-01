@@ -3,6 +3,7 @@
 #include <vector>
 
 // NOTE: Basic Implementation, code should be refactored and restructured in the future
+// Features to change/add: change tasks to a better data structure, add exception handling instead of return code
 
 enum TaskStatus {
     TODO, IN_PROGRESS, DONE
@@ -65,6 +66,7 @@ public:
     }
 };
 
+// Change to binary tree later on for faster search
 std::vector<Task> tasks;
 
 int add(int argc, char *argv[]) {
@@ -76,6 +78,24 @@ int add(int argc, char *argv[]) {
     Task task = Task(tasks.size() + 1, argv[2], TaskStatus::TODO, std::time(nullptr), std::time(nullptr));
 
     tasks.push_back(task);
+
+    return 0;
+}
+
+int upddate(int argc, char *argv[]) {
+    if (argc < 4) {
+        std::cerr << "Usage: ./task-cli update <id> <description>" << std::endl;
+        return 1;
+    }
+
+    int id = std::stoi(argv[2]);
+    std::string description = static_cast<std::string>(argv[3]);
+
+    for (Task& task : tasks) {
+        if (task.getId() == id) {
+            task.setDescription(description);
+        }
+    }
 
     return 0;
 }
@@ -93,8 +113,12 @@ int main(int argc, char *argv[]) {
 
     std::cout << argc << std::endl;
 
-    if (static_cast<std::string>(argv[1]) == "add") {
+    std::string action = static_cast<std::string>(argv[1]);
+
+    if (action == "add") {
         add(argc, argv);
+    }else if (action == "update") {
+        upddate(argc, argv);
     }
 
     for (int i = 0; i < tasks.size(); ++i) {
