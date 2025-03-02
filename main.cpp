@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <unordered_map>
 #include <sstream>
+#include <fstream>
 
 // NOTE: Basic Implementation, code should be refactored and restructured in the future
 // Features to change/add: change tasks to a better data structure, add exception handling instead of return code, refactor everything in more header/source files
@@ -45,6 +46,15 @@ std::string statusToKey(TaskStatus status) {
     }
 
     return "unknown";
+}
+
+TaskStatus keyToStatus(const std::string& key) {
+    for (const auto& [status, str] : statusKeyMap) {
+        if (str == key) {
+            return status;
+        }
+    }
+    return TaskStatus::TODO;
 }
 
 class Task {
@@ -130,10 +140,75 @@ public:
     std::string toString() {
         return std::format("Task: ( id: {}, status: {}, description: {}, createdAt: {}, updatedAt: {} )", this->getId(), this->getStatusLabel(), this->getDescription(), this->getCreatedAtFormated(), this->getUpdatedAtFormated());
     }
+
+    std::string toJSON() {
+        return std::format("{{\"id\":{},\"description\":\"{}\",\"status\":\"{}\",\"createdAt\":{},\"updatedAt\":{}}}",
+                           id, description, statusToKey(status), createdAt, updatedAt);
+    }
 };
 
 // Change to binary tree later on for faster search
 std::vector<Task> tasks = {};
+
+std::string storeName = "tasks.json";
+
+void saveTasksToStore() {
+    std::ofstream file(storeName);
+    file << "[";
+    for (size_t i = 0; i < tasks.size(); i++) {
+        file << tasks[i].toJSON();
+        if (i < tasks.size() - 1) file << ",";
+    }
+    file << "]";
+    file.close();
+}
+
+// Need to change implementation later on to parse the Json in a good way, right now it breaks on couple of occasions
+// It will break if i reformat the json, need to make it more solid
+void loadTasksFromStore() {
+    std::ifstream file(storeName);
+    if (!file) {
+        std::ofstream newFile(storeName);
+        newFile << "[{\"id\":1,\"description\":\"Sample Task\",\"status\":\"todo\",\"createdAt\":0,\"updatedAt\":0}]";
+        newFile.close();
+        file.open(storeName);
+    }
+
+    std::string json, line;
+    while (getline(file, line)) {
+        json += line;
+    }
+    file.close();
+
+    size_t pos = 0;
+    while ((pos = json.find("{")) != std::string::npos) {
+        size_t endPos = json.find("}", pos);
+        if (endPos == std::string::npos) break;
+        std::string taskStr = json.substr(pos + 1, endPos - pos - 1);
+        json.erase(0, endPos + 1);
+
+        int id;
+        std::string description, statusStr;
+        std::time_t createdAt, updatedAt;
+
+        std::istringstream ss(taskStr);
+        std::string token;
+        while (getline(ss, token, ',')) {
+            size_t colonPos = token.find(":");
+            std::string key = token.substr(1, colonPos - 2);
+            std::string value = token.substr(colonPos + 1);
+            value.erase(0, value.find_first_not_of(" "));
+            value.erase(value.find_last_not_of(" ") + 1);
+
+            if (key == "id") id = std::stoi(value);
+            else if (key == "description") description = value.substr(1, value.size() - 2);
+            else if (key == "status") statusStr = value.substr(1, value.size() - 2);
+            else if (key == "createdAt") createdAt = std::stoll(value);
+            else if (key == "updatedAt") updatedAt = std::stoll(value);
+        }
+        tasks.emplace_back(id, description, keyToStatus(statusStr), createdAt, updatedAt);
+    }
+}
 
 struct FindTaskByIdResponse {
     Task& task;
@@ -162,6 +237,8 @@ int add(int argc, char *argv[]) {
     std::cout << "Task Created: " << std::endl;
     std::cout << task.toString() << std::endl;
 
+    saveTasksToStore();
+
     return 0;
 }
 
@@ -185,6 +262,8 @@ int update(int argc, char *argv[]) {
 
     std::cout << "Task Updated: " << std::endl;
     std::cout << response->task.toString() << std::endl;
+
+    saveTasksToStore();
 
     return 0;
 }
@@ -210,6 +289,8 @@ int deleteTask(int argc, char *argv[]) {
     std::cout << "Task Deleted: " << std::endl;
     std::cout << response->task.toString() << std::endl;
 
+    saveTasksToStore();
+
     return 0;
 }
 
@@ -229,6 +310,8 @@ int changeStatus(int argc, char *argv[], TaskStatus newStatus) {
     response->task.setStatus(newStatus);
     std::cout << "Task Changed to: " << response->task.getStatusLabel() << std::endl;
     std::cout << response->task.toString() << std::endl;
+
+    saveTasksToStore();
 
     return 0;
 }
@@ -265,15 +348,12 @@ int list(int argc, char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
-
-    // Just for testing
-    Task task = Task(1, "test", TaskStatus::DONE, std::time(nullptr), std::time(nullptr));
-    tasks.push_back(task);
-
     if (argc < 2) {
         std::cerr << "Usage: ./task.cli <action>\n";
         return 1;
     }
+
+    loadTasksFromStore();
 
     std::string action = static_cast<std::string>(argv[1]);
 
